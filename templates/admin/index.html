@@ -1,0 +1,169 @@
+{% extends "admin/index.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Custom Cards with Real Data -->
+    <div class="row mb-4">
+        <!-- Courriers Entrant Card -->
+        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-info"><i class="fas fa-envelope"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Courriers Entrant</span>
+                    <span class="info-box-number">{{ total_courriers_entrant|default:"0" }}</span>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" style="width: 70%"></div>
+                    </div>
+                    <a href="/admin/courriers/courrierentrant/" class="progress-description">
+                        More info <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Courriers Sortant Card -->
+        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-warning"><i class="fas fa-paper-plane"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Courriers Sortant</span>
+                    <span class="info-box-number">{{ total_courriers_sortant|default:"0" }}</span>
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" style="width: 50%"></div>
+                    </div>
+                    <a href="/admin/courriers/courriersortant/" class="progress-description">
+                        More info <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Card -->
+        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-success"><i class="fas fa-cogs"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Services</span>
+                    <span class="info-box-number">{{ total_services|default:"0" }}</span>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: 60%"></div>
+                    </div>
+                    <a href="/admin/courriers/service/" class="progress-description">
+                        More info <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add another card if needed, or remove this one -->
+        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+            <div class="info-box">
+                <span class="info-box-icon bg-primary"><i class="fas fa-chart-line"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total Courriers</span>
+                    <span class="info-box-number">
+                        {% widthratio total_courriers_entrant|add:total_courriers_sortant 1 1 %}
+                    </span>
+                    <div class="progress">
+                        <div class="progress-bar bg-primary" style="width: 80%"></div>
+                    </div>
+                    <span class="progress-description">All Courriers</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="row">
+        <!-- Recent Actions Section -->
+        {{ block.super }}
+    </div>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .info-box {
+        box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+        border-radius: 0.25rem;
+        background: #fff;
+        display: flex;
+        margin-bottom: 1rem;
+        min-height: 80px;
+        padding: 0.5rem;
+        position: relative;
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    .info-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,.1);
+    }
+    
+    .info-box .info-box-icon {
+        border-radius: 0.25rem;
+        align-items: center;
+        display: flex;
+        font-size: 1.875rem;
+        justify-content: center;
+        text-align: center;
+        width: 70px;
+        height: 70px;
+    }
+    
+    .info-box .info-box-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        line-height: 1.8;
+        flex: 1;
+        padding: 0 10px;
+    }
+    
+    .info-box .info-box-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+    
+    .info-box .progress {
+        background: rgba(0,0,0,.125);
+        height: 2px;
+        margin: 5px 0;
+    }
+    
+    .progress-description {
+        color: #6c757d;
+        text-decoration: none;
+        font-size: 0.875rem;
+    }
+    
+    .progress-description:hover {
+        color: #495057;
+        text-decoration: underline;
+    }
+    
+    .bg-info { background-color: #17a2b8 !important; }
+    .bg-success { background-color: #28a745 !important; }
+    .bg-primary { background-color: #007bff !important; }
+    .bg-warning { background-color: #ffc107 !important; color: #212529 !important; }
+    
+    .card {
+        box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+        margin-bottom: 1rem;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.75rem 1.25rem;
+    }
+    
+    .card-title {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

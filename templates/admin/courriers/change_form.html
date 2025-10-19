@@ -1,0 +1,141 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add OCR functionality to the regular form
+    const fileInput = document.querySelector('input[name="courrier_scanné"]');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                processOCR(this.files[0]);
+            }
+        });
+    }
+
+    function processOCR(file) {
+        const formData = new FormData();
+        formData.append('courrier_scanné', file);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
+        fetch('{% url "admin:courrierentrant_process_ocr" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Auto-fill form fields with OCR data
+                if (data.data.date && !document.getElementById('id_date').value) {
+                    document.getElementById('id_date').value = data.data.date;
+                }
+                if (data.data.expediteur && !document.getElementById('id_expediteur').value) {
+                    document.getElementById('id_expediteur').value = data.data.expediteur;
+                }
+                if (data.data.objet && !document.getElementById('id_objet').value) {
+                    document.getElementById('id_objet').value = data.data.objet;
+                }
+                if (data.data.num_ordre && !document.getElementById('id_num_ordre').value) {
+                    document.getElementById('id_num_ordre').value = data.data.num_ordre;
+                }
+                
+                // Show success message
+                showNotification('Données OCR extraites avec succès!', 'success');
+            } else {
+                showNotification('Erreur OCR: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showNotification('Erreur de traitement: ' + error, 'error');
+        });
+    }
+
+    function showNotification(message, type) {
+        // Create notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            color: white;
+            z-index: 10000;
+            font-weight: bold;
+        `;
+        notification.style.background = type === 'success' ? '#28a745' : '#dc3545';
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+});
+</script>
+{% endblock %}
+
+{% block field_sets %}
+{{ block.super }}
+
+{% if show_ocr %}
+<div class="card card-info card-outline">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="fas fa-camera"></i>
+            Fonctionnalité OCR
+        </h3>
+    </div>
+    <div class="card-body">
+        <p class="text-muted">
+            <i class="fas fa-info-circle"></i>
+            Lorsque vous téléchargez un fichier scanné, l'OCR tentera automatiquement d'extraire les informations.
+        </p>
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Note:</strong> Vérifiez toujours les données extraites avant de sauvegarder.
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block after_field_sets %}
+<!-- BOUTON EMAIL SIMPLE - AJOUTEZ CETTE SECTION -->
+{% if show_email_button %}
+<div class="form-row" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div>
+            <strong style="font-size: 16px; color: #333;">📧 Notification Email</strong>
+            {% if email_sent %}
+                <span style="color: green; margin-left: 10px;">✓ Email envoyé</span>
+            {% else %}
+                <span style="color: orange; margin-left: 10px;">⏳ Email en attente</span>
+            {% endif %}
+        </div>
+        
+        {% if has_service and not email_sent %}
+        <a href="{% url 'admin:courrierentrant_send_email' original.pk %}" 
+           style="background: #28a745; 
+                  color: white; 
+                  padding: 8px 16px; 
+                  text-decoration: none; 
+                  border: none; 
+                  border-radius: 4px; 
+                  cursor: pointer;
+                  font-size: 14px;
+                  font-weight: normal;">
+           Envoyer l'email
+        </a>
+        {% elif not has_service %}
+        <span style="color: #dc3545; font-size: 14px;">⚠️ Sélectionnez un service d'abord</span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{{ block.super }}
+{% endblock %}

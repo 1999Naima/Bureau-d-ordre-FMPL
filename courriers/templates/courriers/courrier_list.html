@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Liste des Courriers</title>
+    <style>
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f8f9fa; }
+        .add-btn { margin-bottom: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <h1>Liste des Courriers Entrants</h1>
+    
+    <a href="{% url 'add_courrier' %}" class="add-btn">Ajouter un Courrier</a>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Numéro d'ordre</th>
+                <th>Date</th>
+                <th>Expéditeur</th>
+                <th>Objet</th>
+                <th>Fichier</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for courrier in courriers %}
+            <tr>
+                <td>{{ courrier.num_ordre }}</td>
+                <td>{{ courrier.date }}</td>
+                <td>{{ courrier.expediteur }}</td>
+                <td>{{ courrier.objet|truncatewords:10 }}</td>
+                <td>
+                    {% if courrier.courrier_scanné %}
+                    <a href="{{ courrier.courrier_scanné.url }}" target="_blank">Voir le fichier</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">Aucun courrier enregistré</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

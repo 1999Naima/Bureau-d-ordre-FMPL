@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Impression Courriers Sortants</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .courrier { border: 1px solid #ccc; margin: 10px 0; padding: 15px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .field { margin: 5px 0; }
+        .field-label { font-weight: bold; }
+        @media print {
+            .no-print { display: none; }
+            button { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Courriers Sortants</h1>
+        <button class="no-print" onclick="window.print()">Imprimer</button>
+        <button class="no-print" onclick="window.close()">Fermer</button>
+    </div>
+
+    {% for courrier in courriers %}
+    <div class="courrier">
+        <div class="field">
+            <span class="field-label">Numéro d'ordre:</span> {{ courrier.num_ordre }}
+        </div>
+        <div class="field">
+            <span class="field-label">Date:</span> {{ courrier.date }}
+        </div>
+        <div class="field">
+            <span class="field-label">Destination:</span> {{ courrier.destination }}
+        </div>
+        <div class="field">
+            <span class="field-label">Objet:</span> {{ courrier.objet }}
+        </div>
+        <div class="field">
+            <span class="field-label">Service:</span> {{ courrier.service.nom|default:"-" }}
+        </div>
+        {% if not forloop.last %}<hr>{% endif %}
+    </div>
+    {% empty %}
+    <p>Aucun courrier sortant sélectionné.</p>
+    {% endfor %}
+</body>
+</html>

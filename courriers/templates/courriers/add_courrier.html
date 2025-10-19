@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ajouter un Courrier Entrant</title>
+    <style>
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input, textarea, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        .btn { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #0056b3; }
+        .ocr-preview { margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 4px; background: #f8f9fa; }
+        .loading { display: none; color: #007bff; }
+        .error { color: #dc3545; }
+        .success { color: #28a745; }
+    </style>
+</head>
+<body>
+    <h1>Ajouter un Courrier Entrant</h1>
+    
+    <form method="post" enctype="multipart/form-data" id="courrierForm">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="id_courrier_scanné">Fichier scanné:</label>
+            {{ form.courrier_scanné }}
+            <div id="fileLoading" class="loading">Traitement OCR en cours...</div>
+        </div>
+
+        <div class="form-group">
+            <label for="id_date">Date:</label>
+            {{ form.date }}
+        </div>
+
+        <div class="form-group">
+            <label for="id_expediteur">Expéditeur:</label>
+            {{ form.expediteur }}
+        </div>
+
+        <div class="form-group">
+            <label for="id_objet">Objet:</label>
+            {{ form.objet }}
+        </div>
+
+        <div class="form-group">
+            <label for="id_num_ordre">Numéro d'ordre:</label>
+            {{ form.num_ordre }}
+        </div>
+
+        <div class="form-group">
+            <label for="id_service">Service:</label>
+            {{ form.service }}
+        </div>
+
+        <button type="submit" class="btn">Enregistrer</button>
+    </form>
+
+    <div id="ocrPreview" class="ocr-preview" style="display: none;">
+        <h3>Résultat de l'OCR:</h3>
+        <div id="previewContent"></div>
+        <button type="button" class="btn" onclick="applyOCRDATA()">Appliquer les données extraites</button>
+    </div>
+
+    <script>
+        document.getElementById('id_courrier_scanné').addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                processOCR(this.files[0]);
+            }
+        });
+
+        function processOCR(file) {
+            const loading = document.getElementById('fileLoading');
+            const preview = document.getElementById('ocrPreview');
+            const previewContent = document.getElementById('previewContent');
+            
+            loading.style.display = 'block';
+            preview.style.display = 'none';
+            
+            const formData = new FormData();
+            formData.append('courrier_scanné', file);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            fetch('{% url "process_ocr" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                
+                if (data.success) {
+                    previewContent.innerHTML = `
+                        <p><strong>Texte extrait:</strong></p>
+                        <pre style="background: white; padding: 10px; border: 1px solid #eee; max-height: 200px; overflow-y: auto;">${data.data.raw_text}</pre>
+                        <p><strong>Données détectées:</strong></p>
+                        <ul>
+                            <li><strong>Date:</strong> ${data.data.date || 'Non détectée'}</li>
+                            <li><strong>Expéditeur:</strong> ${data.data.expediteur || 'Non détecté'}</li>
+                            <li><strong>Objet:</strong> ${data.data.objet || 'Non détecté'}</li>
+                            <li><strong>Numéro d'ordre:</strong> ${data.data.num_ordre || 'Non détecté'}</li>
+                        </ul>
+                    `;
+                    preview.style.display = 'block';
+                    
+                    // Store the extracted data for later use
+                    window.ocrData = data.data;
+                } else {
+                    previewContent.innerHTML = `<p class="error">Erreur: ${data.error}</p>`;
+                    preview.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                previewContent.innerHTML = `<p class="error">Erreur de traitement: ${error}</p>`;
+                preview.style.display = 'block';
+            });
+        }
+
+        function applyOCRDATA() {
+            if (window.ocrData) {
+                if (window.ocrData.date && !document.getElementById('id_date').value) {
+                    document.getElementById('id_date').value = window.ocrData.date;
+                }
+                if (window.ocrData.expediteur && !document.getElementById('id_expediteur').value) {
+                    document.getElementById('id_expediteur').value = window.ocrData.expediteur;
+                }
+                if (window.ocrData.objet && !document.getElementById('id_objet').value) {
+                    document.getElementById('id_objet').value = window.ocrData.objet;
+                }
+                if (window.ocrData.num_ordre && !document.getElementById('id_num_ordre').value) {
+                    document.getElementById('id_num_ordre').value = window.ocrData.num_ordre;
+                }
+                
+                alert('Données OCR appliquées avec succès!');
+            }
+        }
+    </script>
+</body>
+</html>

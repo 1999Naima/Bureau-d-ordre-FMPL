@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% if courriers|length == 1 %}Courrier {{ courriers.0.num_ordre }}{% else %}Impression Multiple{% endif %}</title>
+    <style>
+        @media print {
+            .no-print { display: none; }
+            /* SUPPRIMER le saut de page après chaque courrier */
+            .courrier-item { margin-bottom: 40px; border-bottom: 1px solid #ddd; padding-bottom: 30px; }
+            .courrier-item:last-child { border-bottom: none; }
+        }
+        @media screen {
+            body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+            .print-container { background: white; padding: 30px; margin: 20px auto; max-width: 800px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .field { margin-bottom: 15px; display: flex; }
+        .label { font-weight: bold; color: #333; min-width: 200px; }
+        .value { flex: 1; }
+        .signature { margin-top: 50px; text-align: right; }
+        .actions { text-align: center; margin: 20px 0; }
+        .button { background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 5px; border: none; cursor: pointer; }
+        .summary { background: #f8f9fa; padding: 10px; margin-bottom: 20px; text-align: center; }
+        
+        /* NOUVEAU : Style pour chaque courrier dans la liste */
+        .courrier-item { 
+            margin-bottom: 40px; 
+            border-bottom: 1px solid #ddd; 
+            padding-bottom: 30px; 
+        }
+        .courrier-item:last-child { 
+            border-bottom: none; 
+            margin-bottom: 0; 
+        }
+        .courrier-header { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            margin-bottom: 15px; 
+            border-left: 4px solid #007bff; 
+        }
+    </style>
+</head>
+<body>
+    <div class="print-container">
+        {% if courriers %}
+            <div class="summary no-print">
+                <h3>
+                    {% if courriers|length == 1 %}
+                        Impression du courrier : {{ courriers.0.num_ordre }}
+                    {% else %}
+                        Impression de {{ courriers|length }} courrier(s) - Liste continue
+                    {% endif %}
+                </h3>
+            </div>
+
+            <!-- EN-TÊTE GÉNÉRAL -->
+            <div class="header">
+                <h1>FACULTÉ DE MÉDECINE ET DE PHARMACIE - LAÂYOUNE</h1>
+                <h2>LISTE DES COURRIERS ENTRANTS</h2>
+                {% if courriers|length > 1 %}
+                <p>Date d'impression : {% now "d/m/Y H:i" %} | Total : {{ courriers|length }} courrier(s)</p>
+                {% endif %}
+            </div>
+
+            <!-- LISTE DES COURRIERS LES UNS SOUS LES AUTRES -->
+            {% for courrier in courriers %}
+            <div class="courrier-item">
+                <!-- En-tête pour chaque courrier -->
+                <div class="courrier-header">
+                    <h3>Courrier #{{ forloop.counter }} - N° {{ courrier.num_ordre }}</h3>
+                </div>
+
+                <div class="field">
+                    <span class="label">Numéro d'ordre:</span>
+                    <span class="value">{{ courrier.num_ordre }}</span>
+                </div>
+
+                <div class="field">
+                    <span class="label">Date de réception:</span>
+                    <span class="value">{{ courrier.date }}</span>
+                </div>
+
+                <div class="field">
+                    <span class="label">Expéditeur:</span>
+                    <span class="value">{{ courrier.expediteur }}</span>
+                </div>
+
+                <div class="field">
+                    <span class="label">Objet:</span>
+                    <span class="value">{{ courrier.objet }}</span>
+                </div>
+
+                <div class="field">
+                    <span class="label">Service destinataire:</span>
+                    <span class="value">
+                        {% if courrier.service %}
+                            {{ courrier.service }}
+                        {% else %}
+                            Non spécifié
+                        {% endif %}
+                    </span>
+                </div>
+
+                <div class="signature">
+                    <p>Reçu par : _________________________</p>
+                    <p>Date : _________________________</p>
+                </div>
+
+                <!-- Ligne de séparation sauf pour le dernier -->
+                {% if not forloop.last %}
+                <div style="border-bottom: 1px dashed #ccc; margin: 20px 0;"></div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <!-- SIGNATURE GÉNÉRALE EN BAS DE PAGE -->
+            <div class="signature" style="margin-top: 80px;">
+                <p>Le Responsable du Service Courrier</p>
+                <p>_________________________</p>
+                <p>Faculté de Médecine et de Pharmacie de Laâyoune</p>
+            </div>
+
+            <div class="actions no-print">
+                <button onclick="window.print()" class="button">🖨️ Imprimer la liste</button>
+                <button onclick="window.close()" class="button" style="background: #6c757d;">❌ Fermer</button>
+            </div>
+
+        {% else %}
+            <div class="summary">
+                <h3 style="color: red;">Aucun courrier sélectionné</h3>
+                <button onclick="window.close()" class="button">Fermer</button>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+    // Auto-impression optionnelle
+    window.onload = function() {
+        setTimeout(function() {
+            window.print();
+        }, 500);
+    };
+    </script>
+</body>
+</html>
