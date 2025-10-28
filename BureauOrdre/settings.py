@@ -17,9 +17,7 @@ import os
 # Try to auto-detect Tesseract
 def find_tesseract():
     possible_paths = [
-        r'C:\Program Files\Tesseract-OCR\tesseract.exe',
-        r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
-        r'C:\Tesseract-OCR\tesseract.exe',
+        r'C:\Program Files\Tesseract-OCR\tesseract.exe'
     ]
     
     for path in possible_paths:
@@ -106,6 +104,33 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'BureauOrdre.wsgi.application'
+
+LOGIN_URL = '/admin/login/'
+LOGOUT_REDIRECT_URL = '/admin/login/'
+LOGIN_REDIRECT_URL = '/admin/'
+#added code 
+# Static files
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Jazzmin configuration pour le login personnalisé
+JAZZMIN_SETTINGS = {
+    "site_title": "Bureau d'Ordre",
+    "site_header": "Bureau d'Ordre",
+    "site_brand": "Bureau d'Ordre",
+    "welcome_sign": "Bienvenue dans le système de gestion des courriers",
+    "login_logo": "images/logo.png",
+    "login_logo_dark": "images/logo.png",
+    "site_logo": "images/logo.png",
+    "site_logo_classes": "img-circle",
+    "custom_css": "css/custom_admin.css",
+}
+
+
 
 
 # Database

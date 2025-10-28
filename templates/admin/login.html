@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Bureau d'Ordre</title>
+    {% load static %}  <!-- AJOUTEZ CETTE LIGNE AU DÉBUT -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-box {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid #f8f9fa;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+        }
+        
+        .error {
+            background: #fee;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 20px;
+            color: #721c24;
+            font-size: 14px;
+        }
+        
+        .support {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .support h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .support-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .support-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            text-align: left;
+        }
+        
+        .support-role {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <!-- Logo et titre -->
+        <div class="logo">
+            <img src="{% static 'images/logo.png' %}" alt="Logo Bureau d'Ordre">
+        </div>
+        <h1>Bureau d'Ordre</h1>
+        <p class="subtitle">Système de gestion des courriers</p>
+
+        <!-- Messages d'erreur -->
+        {% if form.errors %}
+            <div class="error">
+                ❌ Nom d'utilisateur ou mot de passe incorrect
+            </div>
+        {% endif %}
+
+        <!-- Formulaire -->
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            
+            <div class="form-group">
+                <label for="username">Nom d'utilisateur:</label>
+                <input type="text" name="username" id="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Mot de passe:</label>
+                <input type="password" name="password" id="password" required>
+            </div>
+            
+            <button type="submit" class="btn-login">Se connecter</button>
+        </form>
+
+        <!-- Support technique 📞 -->
+        <div class="support">
+            <h3> Support Technique</h3>
+            <div class="support-grid">
+                <div class="support-item">
+                    <div class="support-role">Admin Système</div>
+                    s.achbahoum@uiz.ac.ma<br>
+                </div>
+                <div class="support-item">
+                    <div class="support-role">Support IT</div>
+                    n.aitider@uiz.ac.ma<br>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('username').focus();
+    </script>
+</body>
+</html>

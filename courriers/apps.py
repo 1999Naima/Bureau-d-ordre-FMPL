@@ -4,5 +4,7 @@ class CourriersConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'courriers'
 
-    def ready(self):
-        import courriers.signals  # ← très important
+def ready(self):
+        # SUPPRIMEZ cette ligne si elle existe
+        # import courriers.signals
+    pass
