@@ -80,32 +80,12 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endblock %}
 
 {% block field_sets %}
+<!-- Information OCR -->
 {{ block.super }}
-
-{% if show_ocr %}
-<div class="card card-info card-outline">
-    <div class="card-header">
-        <h3 class="card-title">
-            <i class="fas fa-camera"></i>
-            Fonctionnalité OCR
-        </h3>
-    </div>
-    <div class="card-body">
-        <p class="text-muted">
-            <i class="fas fa-info-circle"></i>
-            Lorsque vous téléchargez un fichier scanné, l'OCR tentera automatiquement d'extraire les informations.
-        </p>
-        <div class="alert alert-warning">
-            <i class="fas fa-exclamation-triangle"></i>
-            <strong>Note:</strong> Vérifiez toujours les données extraites avant de sauvegarder.
-        </div>
-    </div>
-</div>
-{% endif %}
 {% endblock %}
 
 {% block after_field_sets %}
-<!-- BOUTON EMAIL SIMPLE - AJOUTEZ CETTE SECTION -->
+<!-- BOUTON EMAIL SIMPLE -->
 {% if show_email_button %}
 <div class="form-row" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff;">
     <div style="display: flex; align-items: center; justify-content: space-between;">

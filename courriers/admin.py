@@ -1,4 +1,3 @@
-# courriers/admin.py
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import get_object_or_404, render, redirect
@@ -53,18 +52,40 @@ class ServiceAdmin(admin.ModelAdmin):
         return obj.courrierentrant_set.count() + obj.courriersortant_set.count()
     courrier_count.short_description = 'Nombre de courriers'
 
+# Formulaire pour CourrierSortant avec checkboxes
+class CourrierSortantForm(forms.ModelForm):
+    class Meta:
+        model = CourrierSortant
+        fields = '__all__'
+        widgets = {
+            'services': forms.CheckboxSelectMultiple,
+        }
+
 @admin.register(CourrierSortant)
 class CourrierSortantAdmin(admin.ModelAdmin):
-    list_display = ['num_ordre', 'date', 'destination', 'objet_truncated', 'service', 'courrier_scanne_link', 'print_action']
-    list_filter = ['date', 'service']
+    form = CourrierSortantForm  # Ajout du formulaire personnalisé
+    list_display = ['num_ordre', 'date', 'destination', 'objet_truncated', 'services_display', 'courrier_scanne_link', 'print_action']  # Changé 'service' en 'services_display'
+    list_filter = ['date', 'services']  # Changé 'service' en 'services'
     search_fields = ['num_ordre', 'destination', 'objet']
     ordering = ['-date']
     list_per_page = 20
     actions = ['print_selected_action']
     
+    # Ajout du fieldset pour les services
+    fieldsets = (
+        (None, {
+            'fields': ('date', 'destination', 'objet', 'num_ordre', 'courrier_scanné', 'services')  # Changé 'service' en 'services'
+        }),
+    )
+    
     def objet_truncated(self, obj):
         return obj.objet[:50] + '...' if len(obj.objet) > 50 else obj.objet
     objet_truncated.short_description = 'Objet'
+    
+    def services_display(self, obj):
+        """Affiche la liste des services dans l'admin"""
+        return ", ".join([service.nom for service in obj.services.all()])
+    services_display.short_description = 'Services'  # Changé le nom de la colonne
     
     def courrier_scanne_link(self, obj):
         if obj.courrier_scanné:
@@ -124,7 +145,7 @@ class CourrierSortantAdmin(admin.ModelAdmin):
     print_selected_action.short_description = "🖨️ Imprimer la sélection"
     
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('service')
+        return super().get_queryset(request).prefetch_related('services')  # Changé select_related en prefetch_related
 
 class CourrierEntrantForm(forms.ModelForm):
     send_email = forms.BooleanField(
@@ -136,12 +157,15 @@ class CourrierEntrantForm(forms.ModelForm):
     class Meta:
         model = CourrierEntrant
         fields = '__all__'
+        widgets = {
+            'services': forms.CheckboxSelectMultiple,
+        }
 
 @admin.register(CourrierEntrant)
 class CourrierEntrantAdmin(admin.ModelAdmin):
     form = CourrierEntrantForm
-    list_display = ['num_ordre', 'date', 'expediteur', 'objet_truncated', 'service', 'courrier_scanne_link', 'print_action', 'email_sent']
-    list_filter = ['date', 'service']
+    list_display = ['num_ordre', 'date', 'expediteur', 'objet_truncated', 'services_display', 'courrier_scanne_link', 'print_action', 'email_sent']
+    list_filter = ['date', 'services']  # Changé de 'service' à 'services'
     search_fields = ['num_ordre', 'expediteur', 'objet']
     ordering = ['-date']
     actions = ['print_selected_action', 'send_email_action']
@@ -149,7 +173,7 @@ class CourrierEntrantAdmin(admin.ModelAdmin):
     # Champs à afficher dans le formulaire
     fieldsets = (
         (None, {
-            'fields': ('date', 'expediteur', 'objet', 'num_ordre', 'courrier_scanné', 'service')
+            'fields': ('date', 'expediteur', 'objet', 'num_ordre', 'courrier_scanné', 'services')  # Changé de 'service' à 'services'
         }),
         ('Notification Email', {
             'fields': ('send_email',),
@@ -161,6 +185,11 @@ class CourrierEntrantAdmin(admin.ModelAdmin):
     def objet_truncated(self, obj):
         return obj.objet[:50] + '...' if len(obj.objet) > 50 else obj.objet
     objet_truncated.short_description = 'Objet'
+    
+    def services_display(self, obj):
+        """Affiche la liste des services dans l'admin"""
+        return ", ".join([service.nom for service in obj.services.all()])
+    services_display.short_description = 'Services'  # Changé le nom de la colonne
     
     def courrier_scanne_link(self, obj):
         if obj.courrier_scanné:
@@ -256,25 +285,35 @@ class CourrierEntrantAdmin(admin.ModelAdmin):
     def send_courrier_email(self, courrier):
         """Fonction pour envoyer l'email pour un courrier avec pièce jointe"""
         try:
-            # Vérifier si le service a un responsable avec un email
-            if not courrier.service or not courrier.service.responsable or not courrier.service.responsable.email:
+            # Récupérer tous les services et leurs responsables
+            services = courrier.services.all()
+            if not services:
                 return False
             
-            recipient_email = courrier.service.responsable.email
-            recipient_name = courrier.service.responsable.get_full_name() or courrier.service.responsable.username
+            # Collecter tous les emails uniques des responsables
+            recipient_emails = []
+            for service in services:
+                if service.responsable and service.responsable.email:
+                    recipient_emails.append(service.responsable.email)
+            
+            if not recipient_emails:
+                return False
+            
+            # Préparer le contenu de l'email
+            service_names = ", ".join([service.nom for service in services])
             
             subject = f"📨 Nouveau courrier entrant - {courrier.num_ordre}"
             message = f"""
-            Bonjour {recipient_name},
+            Bonjour,
             
-            Un nouveau courrier entrant a été enregistré et assigné à votre service.
+            Un nouveau courrier entrant a été enregistré et assigné à votre/vos service(s).
             
             📋 Détails du courrier :
             • Numéro d'ordre: {courrier.num_ordre}
             • Date: {courrier.date}
             • Expéditeur: {courrier.expediteur}
             • Objet: {courrier.objet}
-            • Service: {courrier.service.nom}
+            • Service(s): {service_names}
             
             Le courrier scanné est joint à cet email.
             
@@ -289,7 +328,7 @@ class CourrierEntrantAdmin(admin.ModelAdmin):
                 subject=subject,
                 body=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[recipient_email],
+                to=recipient_emails,
             )
             
             # Vérifier si le fichier existe
@@ -344,11 +383,11 @@ class CourrierEntrantAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         
         # Vérifier si la case d'envoi d'email a été cochée
-        if form.cleaned_data.get('send_email') and obj.service:
+        if form.cleaned_data.get('send_email') and obj.services.exists():
             if self.send_courrier_email(obj):
-                messages.success(request, f"Email envoyé avec succès à {obj.service.responsable.email}")
+                messages.success(request, f"Email envoyé avec succès aux responsables des services")
             else:
-                messages.error(request, "Erreur lors de l'envoi de l'email au responsable")
+                messages.error(request, "Erreur lors de l'envoi des emails aux responsables")
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ProcessOCRView(View):

@@ -8,7 +8,7 @@ class CourrierEntrant(models.Model):
     objet = models.TextField()
     num_ordre = models.CharField(max_length=50, unique=True)
     courrier_scanné = models.FileField(upload_to='courriers/entrants/')
-    service = models.ForeignKey('courriers.Service', on_delete=models.SET_NULL, null=True, blank=True)
+    services = models.ManyToManyField('courriers.Service', blank=True, verbose_name="Services")  # Changé en ManyToMany
     email_sent = models.BooleanField(default=False, verbose_name="Email envoyé") 
     
     def __str__(self):
