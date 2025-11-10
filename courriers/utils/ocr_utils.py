@@ -5,7 +5,7 @@ from dateutil import parser
 from datetime import datetime
 import os
 
-def extract_text_from_image(image_file):
+def extract_text_from_image(image_file, lang='fra'):
     """
     Extract text from an image file using Tesseract OCR with French focus
     """
@@ -21,7 +21,7 @@ def extract_text_from_image(image_file):
         # Perform OCR with French language and better configuration
         text = pytesseract.image_to_string(
             image, 
-            lang='fra',  # Force French language
+            lang=lang,
             config='--psm 6 -c preserve_interword_spaces=1'
         )
         
@@ -129,6 +129,45 @@ def extract_expediteur(text):
     
     return "Expéditeur non identifié"
 
+import re
+
+def extract_destination(text):
+    """
+    Extract destination/recipient information from French documents
+    """
+    lines = text.split('\n')
+    clean_lines = [line.strip() for line in lines if line.strip()]
+    
+    # Trouver d'abord l'expéditeur pour l'exclure
+    expediteur_index = -1
+    for i, line in enumerate(clean_lines):
+        if any(keyword in line.lower() for keyword in ['faculté', 'université', 'doyen', 'doyenne']):
+            expediteur_index = i
+            break
+    
+    # Maintenant chercher le destinataire APRÈS l'expéditeur
+    for i, line in enumerate(clean_lines):
+        # Pattern pour "A Monsieur..." ou "À Madame..."
+        if re.match(r'^[AÀ]\s+(Monsieur|Madame|M\.|Mme|Mlle)', line, re.IGNORECASE):
+            # Vérifier que ce n'est pas avant l'expéditeur
+            if i > expediteur_index:
+                return line.strip()[:255]
+        
+        # Pattern pour des titres professionnels
+        if re.match(r'^(Monsieur|Madame|M\.|Mme|Mlle|Docteur|Dr|Professeur|Pr)\s+', line, re.IGNORECASE):
+            # Vérifier que ce n'est pas l'expéditeur et que c'est après lui
+            if i > expediteur_index and i > 0:
+                if 'faculté' not in clean_lines[i-1].lower() and 'université' not in clean_lines[i-1].lower():
+                    return line.strip()[:255]
+    
+    # Si on n'a pas trouvé, chercher spécifiquement après l'expéditeur
+    if expediteur_index != -1:
+        for i in range(expediteur_index + 1, len(clean_lines)):
+            if re.match(r'^[AÀ]?\s*(Monsieur|Madame|M\.|Mme)', clean_lines[i], re.IGNORECASE):
+                return clean_lines[i].strip()[:255]
+    
+    return "destination non identifié"
+
 def extract_objet(text):
     """
     Extract subject/object information from French documents
@@ -193,21 +232,36 @@ def extract_num_ordre(text):
     
     return None
 
-def process_courrier_ocr(image_file):
+def process_courrier_ocr(image_file, lang='fra'):
     """
     Main function to process courrier and extract all fields
     """
-    text = extract_text_from_image(image_file)
+    try:
+        text = extract_text_from_image(image_file, lang)
+        
+        if text.startswith("Error"):
+            return {'error': text, 'raw_text': ''}
+        
+        extracted_data = {
+            'date': extract_date(text),
+            'expediteur': extract_expediteur(text),
+            'destination': extract_destination(text),
+            'objet': extract_objet(text),
+            'num_ordre': extract_num_ordre(text),
+            'raw_text': text[:1000] + '...' if len(text) > 1000 else text,
+            'language': lang
+        }
+        
+        return extracted_data
     
-    if text.startswith("Error"):
-        return {'error': text, 'raw_text': ''}
-    
-    extracted_data = {
-        'date': extract_date(text),
-        'expediteur': extract_expediteur(text),
-        'objet': extract_objet(text),
-        'num_ordre': extract_num_ordre(text),
-        'raw_text': text[:1000] + '...' if len(text) > 1000 else text
-    }
-    
-    return extracted_data
+    except Exception as e:
+        return {
+            'error': f'Erreur lors du traitement OCR: {str(e)}',
+            'date': None,
+            'expediteur': '',
+            'destination': '',
+            'objet': '',
+            'num_ordre': '',
+            'raw_text': '',
+            'language': lang
+        }

@@ -5,7 +5,6 @@
 {{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Add OCR functionality to the regular form
     const fileInput = document.querySelector('input[name="courrier_scanné"]');
     if (fileInput) {
         fileInput.addEventListener('change', function(e) {
@@ -20,40 +19,73 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('courrier_scanné', file);
         formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
         
-        fetch('{% url "admin:courrierentrant_process_ocr" %}', {
+        // ⭐ CORRECTION : Détection automatique du type de courrier
+        const isSortant = window.location.pathname.includes('courriersortant');
+        const url = isSortant 
+            ? '{% url "admin:courriersortant_process_ocr" %}' 
+            : '{% url "admin:courrierentrant_process_ocr" %}';
+        
+        console.log('Type:', isSortant ? 'SORTANT' : 'ENTRANT');
+        console.log('URL:', url);
+        
+        fetch(url, {
             method: 'POST',
             body: formData
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                // Auto-fill form fields with OCR data
-                if (data.data.date && !document.getElementById('id_date').value) {
-                    document.getElementById('id_date').value = data.data.date;
-                }
-                if (data.data.expediteur && !document.getElementById('id_expediteur').value) {
-                    document.getElementById('id_expediteur').value = data.data.expediteur;
-                }
-                if (data.data.objet && !document.getElementById('id_objet').value) {
-                    document.getElementById('id_objet').value = data.data.objet;
-                }
-                if (data.data.num_ordre && !document.getElementById('id_num_ordre').value) {
-                    document.getElementById('id_num_ordre').value = data.data.num_ordre;
+            console.log('Réponse OCR:', data);
+            
+            if (data && data.success && data.data) {
+                // Remplir les champs communs
+                if (data.data.date) {
+                    const dateField = document.getElementById('id_date');
+                    if (dateField && !dateField.value) dateField.value = data.data.date;
                 }
                 
-                // Show success message
+                if (data.data.objet) {
+                    const objetField = document.getElementById('id_objet');
+                    if (objetField && !objetField.value) objetField.value = data.data.objet;
+                }
+                
+                if (data.data.num_ordre) {
+                    const numOrdreField = document.getElementById('id_num_ordre');
+                    if (numOrdreField && !numOrdreField.value) numOrdreField.value = data.data.num_ordre;
+                }
+                
+                // ⭐ CORRECTION : Champs spécifiques selon le type
+                if (isSortant) {
+                    // Courrier SORTANT -> champ destination
+                    if (data.data.destination) {
+                        const destinationField = document.getElementById('id_destination');
+                        if (destinationField && !destinationField.value) {
+                            destinationField.value = data.data.destination;
+                        }
+                    }
+                } else {
+                    // Courrier ENTRANT -> champ expéditeur
+                    if (data.data.expediteur) {
+                        const expediteurField = document.getElementById('id_expediteur');
+                        if (expediteurField && !expediteurField.value) {
+                            expediteurField.value = data.data.expediteur;
+                        }
+                    }
+                }
+                
                 showNotification('Données OCR extraites avec succès!', 'success');
             } else {
-                showNotification('Erreur OCR: ' + data.error, 'error');
+                const errorMessage = data?.error || 'Aucune donnée extraite';
+                showNotification('Erreur OCR: ' + errorMessage, 'error');
+                console.error('OCR Error:', data);
             }
         })
         .catch(error => {
             showNotification('Erreur de traitement: ' + error, 'error');
+            console.error('Fetch Error:', error);
         });
     }
 
     function showNotification(message, type) {
-        // Create notification
         const notification = document.createElement('div');
         notification.style.cssText = `
             position: fixed;
@@ -70,52 +102,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.body.appendChild(notification);
         
-        // Remove after 3 seconds
         setTimeout(() => {
             notification.remove();
         }, 3000);
     }
 });
 </script>
-{% endblock %}
-
-{% block field_sets %}
-<!-- Information OCR -->
-{{ block.super }}
-{% endblock %}
-
-{% block after_field_sets %}
-<!-- BOUTON EMAIL SIMPLE -->
-{% if show_email_button %}
-<div class="form-row" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff;">
-    <div style="display: flex; align-items: center; justify-content: space-between;">
-        <div>
-            <strong style="font-size: 16px; color: #333;">📧 Notification Email</strong>
-            {% if email_sent %}
-                <span style="color: green; margin-left: 10px;">✓ Email envoyé</span>
-            {% else %}
-                <span style="color: orange; margin-left: 10px;">⏳ Email en attente</span>
-            {% endif %}
-        </div>
-        
-        {% if has_service and not email_sent %}
-        <a href="{% url 'admin:courrierentrant_send_email' original.pk %}" 
-           style="background: #28a745; 
-                  color: white; 
-                  padding: 8px 16px; 
-                  text-decoration: none; 
-                  border: none; 
-                  border-radius: 4px; 
-                  cursor: pointer;
-                  font-size: 14px;
-                  font-weight: normal;">
-           Envoyer l'email
-        </a>
-        {% elif not has_service %}
-        <span style="color: #dc3545; font-size: 14px;">⚠️ Sélectionnez un service d'abord</span>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
-{{ block.super }}
 {% endblock %}

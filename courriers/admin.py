@@ -414,6 +414,7 @@ class ProcessOCRView(View):
                 'data': {
                     'date': extracted_data['date'].isoformat() if extracted_data['date'] else '',
                     'expediteur': extracted_data['expediteur'],
+                      'destination': extracted_data['destination'],
                     'objet': extracted_data['objet'],
                     'num_ordre': extracted_data['num_ordre'] or '',
                     'raw_text': extracted_data['raw_text']

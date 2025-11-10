@@ -22,6 +22,37 @@ class CourrierEntrantForm(forms.ModelForm):
             'email_sent': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        courrier_scanné = cleaned_data.get('courrier_scanné')
+        
+        if courrier_scanné and not self.instance.pk:
+            try:
+                extracted_data = process_courrier_ocr(courrier_scanné)
+                
+                if (extracted_data and 
+                    isinstance(extracted_data, dict) and 
+                    extracted_data != {} and 
+                    'error' not in extracted_data):
+                    
+                    # POUR COURRIER ENTRANT : utiliser expediteur
+                    if not cleaned_data.get('date') and extracted_data.get('date'):
+                        cleaned_data['date'] = extracted_data['date']
+                    
+                    if not cleaned_data.get('expediteur') and extracted_data.get('expediteur'):
+                        cleaned_data['expediteur'] = extracted_data['expediteur']
+                    
+                    if not cleaned_data.get('objet') and extracted_data.get('objet'):
+                        cleaned_data['objet'] = extracted_data['objet']
+                    
+                    if not cleaned_data.get('num_ordre') and extracted_data.get('num_ordre'):
+                        cleaned_data['num_ordre'] = extracted_data['num_ordre']
+                        
+            except Exception as e:
+                print(f"Erreur OCR CourrierEntrant: {e}")
+
+        return cleaned_data
+
 class CourrierSortantForm(forms.ModelForm):
     services = forms.ModelMultipleChoiceField(
         queryset=Service.objects.all(),
@@ -48,27 +79,37 @@ class CourrierSortantForm(forms.ModelForm):
         self.fields['destination'].required = False
         self.fields['objet'].required = False
         self.fields['num_ordre'].required = False
-
+    
     def clean(self):
         cleaned_data = super().clean()
         courrier_scanné = cleaned_data.get('courrier_scanné')
         
-        if courrier_scanné and not self.instance.pk:  # Only for new instances
-            # Process OCR to validate and suggest data
-            extracted_data = process_courrier_ocr(courrier_scanné)
-            
-            if extracted_data:
-                # Suggest values if fields are empty
-                if not cleaned_data.get('date') and extracted_data['date']:
-                    self.cleaned_data['date'] = extracted_data['date']
+        if courrier_scanné and not self.instance.pk:
+            try:
+                extracted_data = process_courrier_ocr(courrier_scanné)
                 
-                if not cleaned_data.get('destination') and extracted_data['expediteur']:
-                    self.cleaned_data['destination'] = extracted_data['expediteur']
-                
-                if not cleaned_data.get('objet') and extracted_data['objet']:
-                    self.cleaned_data['objet'] = extracted_data['objet']
-                
-                if not cleaned_data.get('num_ordre') and extracted_data['num_ordre']:
-                    self.cleaned_data['num_ordre'] = extracted_data['num_ordre']
+                if (extracted_data and 
+                    isinstance(extracted_data, dict) and 
+                    extracted_data != {} and 
+                    'error' not in extracted_data):
+                    
+                    # CORRECTION CRITIQUE : POUR COURRIER SORTANT
+                    # Utiliser 'destination' depuis l'OCR, pas 'expediteur'
+                    
+                    if not cleaned_data.get('date') and extracted_data.get('date'):
+                        cleaned_data['date'] = extracted_data['date']
+                    
+                    # CORRECTION ICI : utiliser 'destination' au lieu de 'expediteur'
+                    if not cleaned_data.get('destination') and extracted_data.get('destination'):
+                        cleaned_data['destination'] = extracted_data['destination']
+                    
+                    if not cleaned_data.get('objet') and extracted_data.get('objet'):
+                        cleaned_data['objet'] = extracted_data['objet']
+                    
+                    if not cleaned_data.get('num_ordre') and extracted_data.get('num_ordre'):
+                        cleaned_data['num_ordre'] = extracted_data['num_ordre']
+                        
+            except Exception as e:
+                print(f"Erreur OCR CourrierSortant: {e}")
         
         return cleaned_data
